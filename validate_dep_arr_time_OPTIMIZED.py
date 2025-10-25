@@ -237,31 +237,20 @@ print(f"Found {flights_to_fix:,} flights crossing midnight - fixing...")
 
 # VECTORIZED FIX: Add 1 day to ALL problematic arrival times at once
 # This is much faster than a for loop!
+#
+# IMPORTANT FIX: Instead of re-localizing naive datetimes (which fails for DST-ambiguous times),
+# we add 1 day directly to the timezone-aware UTC times. This preserves timezone information
+# and avoids NaT errors during DST transitions.
 if flights_to_fix > 0:
-    # Add 1 day to arrival_local_time for all midnight crossings
+    # Add 1 day to arrival_utc (timezone-aware, so no ambiguity issues)
+    flight_data.loc[midnight_crossing_flights, 'arrival_utc'] = (
+        flight_data.loc[midnight_crossing_flights, 'arrival_utc'] + pd.Timedelta(days=1)
+    )
+
+    # Also update arrival_local_time for consistency (add 1 day to naive datetime)
     flight_data.loc[midnight_crossing_flights, 'arrival_local_time'] = (
         flight_data.loc[midnight_crossing_flights, 'arrival_local_time'] + pd.Timedelta(days=1)
     )
-
-    # Recalculate UTC times for the corrected arrivals
-    # We need to do this per timezone again
-    # Build a temporary list to collect corrected UTC times
-    corrected_indices = flight_data.index[midnight_crossing_flights].tolist()
-
-    for tz in flight_data.loc[midnight_crossing_flights, 'dest_tz'].dropna().unique():
-        mask = midnight_crossing_flights & (flight_data['dest_tz'] == tz)
-        indices = flight_data.index[mask].tolist()
-        try:
-            localized = flight_data.loc[mask, 'arrival_local_time'].dt.tz_localize(
-                tz, ambiguous='NaT', nonexistent='shift_forward'
-            )
-            # Convert to UTC (keeping timezone aware, same as Step 7)
-            utc_times = localized.dt.tz_convert('UTC')
-            # Update the arrival_utc column for these specific rows
-            for idx, utc_time in zip(indices, utc_times):
-                flight_data.at[idx, 'arrival_utc'] = utc_time
-        except:
-            pass
 
 print(f"Midnight crossings corrected (vectorized)")
 
