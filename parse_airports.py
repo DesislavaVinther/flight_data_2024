@@ -3,7 +3,7 @@ import pandas as pd
 
 
 # liste med kolonnenavne
-# den fil du jeg skal læse har ikke selv en overskriftslinje. Jeg fortæller på forhånd, hvad kolonnerne skal hedde
+# den fil du jeg skal læse har ikke selv en overskriftslinje. Der bliver skrevet claypå forhånd, hvad kolonnerne skal hedde
 
 cols = ["airport_id","name","city","country","iata","icao",
         "latitude","longitude","altitude_ft","timezone","dst","tz","type","source"]
