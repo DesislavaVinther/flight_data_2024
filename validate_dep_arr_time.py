@@ -12,6 +12,7 @@ Creates 'invalid_flights.csv' containing any flights where arrival appears befor
 import pandas as pd  # Library for working with tabular data (like Excel in Python)
 from pathlib import Path  # Modern way to handle file paths
 from zoneinfo import ZoneInfo  # Python's built-in timezone handling library
+from datetime import datetime  # For tracking script execution time
 
 # ============================================================================
 # STEP 1: DEFINE FILE PATHS
@@ -20,10 +21,16 @@ from zoneinfo import ZoneInfo  # Python's built-in timezone handling library
 BASE_DIRECTORY = Path(r"C:\Users\desib\PycharmProjects\Flight data\data")
 FLIGHT_DATA_FILE = BASE_DIRECTORY / "flight_data_2024.csv"
 AIRPORT_DATA_FILE = BASE_DIRECTORY / "airports_correlated_with_altitude_longitude.csv"
-OUTPUT_FILE = BASE_DIRECTORY / "invalid_flights.csv"
+OUTPUT_FILE = BASE_DIRECTORY / "invalid_flights_v2.csv"
 
 # Verify that both input files exist before we start processing
 assert FLIGHT_DATA_FILE.exists() and AIRPORT_DATA_FILE.exists(), "Missing input files"
+
+# Record start time to measure script performance
+script_start_time = datetime.now()
+print("="*70)
+print(f"Script started at: {script_start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+print("="*70)
 print(f"Processing: {FLIGHT_DATA_FILE.name}")
 
 # ============================================================================
@@ -268,4 +275,20 @@ columns_to_save = [
 # Save to CSV file (without row numbers)
 invalid_flights[columns_to_save].to_csv(OUTPUT_FILE, index=False)
 print(f"\nInvalid flights saved to: {OUTPUT_FILE}")
+
+# ============================================================================
+# SCRIPT EXECUTION TIME SUMMARY
+# ============================================================================
+# Record end time and calculate how long the script took to run
+script_end_time = datetime.now()
+elapsed_time = script_end_time - script_start_time
+
+# Convert elapsed time to minutes and seconds for easier reading
+total_seconds = elapsed_time.total_seconds()
+minutes = int(total_seconds // 60)
+seconds = int(total_seconds % 60)
+
+print("="*70)
+print(f"Script finished at: {script_end_time.strftime('%Y-%m-%d %H:%M:%S')}")
+print(f"Total execution time: {minutes} minutes and {seconds} seconds ({total_seconds:.1f}s)")
 print("="*70)
