@@ -6,7 +6,7 @@ df = pd.read_csv('./data/flight_data_2024.csv', low_memory=False)
 # Create on-time indicator
 df['on_time'] = (df['arr_delay'] <= 15).astype(int)
             # Note: treating missing arr_delay (e.g., cancelled) as 0/on_time=0 counts them as not on time.
-            # If we want to exclude cancellations from the Key Performance Indicator, we can change the logic.
+            # If we want to exclude cancellations from the Key Performance Indicator, we need to change the logic.
 
 # Airports performance
 airport_perf = (
