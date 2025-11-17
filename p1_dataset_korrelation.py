@@ -64,3 +64,5 @@ plt.show(block=True)
 # plt.tight_layout() sørger for at teksten ikke overlapper.
 # plt.show(block=True) viser grafen (og holder den åben indtil du lukker vinduet).
 
+#TEST(DIV)
+
