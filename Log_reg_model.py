@@ -313,7 +313,12 @@ def main(filepath):
     # STEP 4: SAVE RESULTS
     print("\n>>> Saving results...")
     # Save beta coefficients to CSV file for later analysis
-    beta_df.to_csv('beta_coefficients.csv')
+    beta_df.to_csv(
+        "beta_coefficients.csv",
+        index=False,
+        sep=";",        # kolonne-skilletegn (godt til dansk Excel)
+        decimal=","     # dansk decimaltegn
+    )
 
 
     # PRINT SUMMARY
