@@ -1,45 +1,110 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 
 # Indlæs kun relevante kolonner
 usecols = ["fl_date", "dep_delay", "arr_delay", "diverted", "distance"]
-df = pd.read_csv(r"C:\Users\madsh\Downloads\flight_data_2023_2025_V_1.3.csv", usecols=usecols, nrows=10000)
+df = pd.read_csv(
+    r"C:\Users\madsh\Downloads\flight_data_2023_2025_V_1.3.csv",
+    usecols=usecols
+)
 
-# Split datasættet uden loops
-Adf = df[df["fl_date"] < "2024-06-25"].copy()
-Bdf = df[df["fl_date"] >= "2024-06-25"].copy()
+# Datatype
+df["fl_date"] = pd.to_datetime(df["fl_date"])
 
-# Shift-funktion for log-log
+# Fjern kun punkter <180 i begge akser
+df = df[~((df["dep_delay"] < 180) & (df["arr_delay"] < 180))]
+
+# Periode-split
+P1 = df[df["fl_date"] < "2024-06-25"].copy()
+P2 = df[df["fl_date"] >= "2024-06-25"].copy()
+
+# Shift-funktion til log-log
 def shift_for_log(df, col):
-    if df.empty:
-        return df[col]
-    shifted = df[col] - df[col].min() + 1
-    shifted = shifted[shifted > 0]
-    return shifted
+    return df[col] - df[col].min() + 1
 
-# Tilføj shifted kolonner
-if not Adf.empty:
-    Adf["dep_shift"] = shift_for_log(Adf, "dep_delay")
-    Adf["arr_shift"] = shift_for_log(Adf, "arr_delay")
-if not Bdf.empty:
-    Bdf["dep_shift"] = shift_for_log(Bdf, "dep_delay")
-    Bdf["arr_shift"] = shift_for_log(Bdf, "arr_delay")
+# Shift kolonner
+for d in [P1, P2]:
+    d["dep_shift"] = shift_for_log(d, "dep_delay")
+    d["arr_shift"] = shift_for_log(d, "arr_delay")
 
-# Log-log scatterplot funktion
-def plot_loglog(df, filename, title):
-    if df.empty or df["dep_shift"].empty or df["arr_shift"].empty:
-        print(f"{title}: Ingen data til log-log plot, springer over.")
-        return
-    plt.figure()
-    plt.scatter(df["dep_shift"], df["arr_shift"], s=5, alpha=0.5)
-    plt.xscale("log")
-    plt.yscale("log")
-    plt.xlabel("Departure Delay (log)")
-    plt.ylabel("Arrival Delay (log)")
-    plt.title(title)
-    plt.savefig(filename)
-    plt.show()
+# 180-min grænser efter shift
+p1_dep_thr = 180 - P1["dep_delay"].min() + 1
+p1_arr_thr = 180 - P1["arr_delay"].min() + 1
 
-# Tegn scatterplots
-plot_loglog(Adf, "scatter_p1_loglog.png", "P1 log-log")
-plot_loglog(Bdf, "scatter_p2_loglog.png", "P2 log-log")
+p2_dep_thr = 180 - P2["dep_delay"].min() + 1
+p2_arr_thr = 180 - P2["arr_delay"].min() + 1
+
+# Plot
+fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
+
+# ---------- P1 ----------
+axes[0].scatter(
+    P1["dep_shift"],
+    P1["arr_shift"],
+    s=6,
+    alpha=0.6
+)
+
+axes[0].axvline(p1_dep_thr, linestyle="--", linewidth=1)
+axes[0].axhline(p1_arr_thr, linestyle="--", linewidth=1)
+
+# Rød markering nederst til venstre
+axes[0].add_patch(
+    Rectangle(
+        (1, 1),
+        p1_dep_thr - 1,
+        p1_arr_thr - 1,
+        color="red",
+        alpha=0.15
+    )
+)
+
+axes[0].set_xscale("log")
+axes[0].set_yscale("log")
+axes[0].set_xlabel("Departure Delay (log)")
+axes[0].set_ylabel("Arrival Delay (log)")
+
+# ---------- P2 ----------
+axes[1].scatter(
+    P2["dep_shift"],
+    P2["arr_shift"],
+    s=6,
+    alpha=0.6,
+    color="tab:orange"
+)
+
+axes[1].axvline(p2_dep_thr, linestyle="--", linewidth=1)
+axes[1].axhline(p2_arr_thr, linestyle="--", linewidth=1)
+
+axes[1].add_patch(
+    Rectangle(
+        (1, 1),
+        p2_dep_thr - 1,
+        p2_arr_thr - 1,
+        color="red",
+        alpha=0.15
+    )
+)
+
+axes[1].set_xscale("log")
+axes[1].set_yscale("log")
+axes[1].set_xlabel("Departure Delay (log)")
+
+plt.tight_layout()
+plt.savefig("scatter_loglog_P1_P2_filtered_low_delays.png", dpi=300)
+plt.show()
+# Nedre højre kvadrant: dep >=180 og arr <180
+def lower_right_share(df):
+    total = len(df)
+    lr = df[(df["dep_delay"] >= 180) & (df["arr_delay"] < 180)]
+    count = len(lr)
+    share = count / total if total > 0 else 0
+    return count, share
+
+p1_count, p1_share = lower_right_share(P1)
+p2_count, p2_share = lower_right_share(P2)
+
+print("Nedre højre kvadrant")
+print(f"P1: {p1_count} ud af {len(P1)} flights ({p1_share:.2%})")
+print(f"P2: {p2_count} ud af {len(P2)} flights ({p2_share:.2%})")
