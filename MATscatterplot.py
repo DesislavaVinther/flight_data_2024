@@ -52,9 +52,9 @@ axes[0].axhline(p1_arr_thr, linestyle="--", linewidth=1)
 # Rød markering nederst til venstre
 axes[0].add_patch(
     Rectangle(
-        (1, 1),
-        p1_dep_thr - 1,
-        p1_arr_thr - 1,
+        (100, 100),
+        max(p1_dep_thr - 100, 0),
+        max(p1_arr_thr - 100, 0),
         color="red",
         alpha=0.15
     )
@@ -62,6 +62,8 @@ axes[0].add_patch(
 
 axes[0].set_xscale("log")
 axes[0].set_yscale("log")
+axes[0].set_xlim(left=100)
+axes[0].set_ylim(bottom=100)
 axes[0].set_xlabel("Departure Delay (log)")
 axes[0].set_ylabel("Arrival Delay (log)")
 
@@ -79,9 +81,9 @@ axes[1].axhline(p2_arr_thr, linestyle="--", linewidth=1)
 
 axes[1].add_patch(
     Rectangle(
-        (1, 1),
-        p2_dep_thr - 1,
-        p2_arr_thr - 1,
+        (100, 100),
+        max(p2_dep_thr - 100, 0),
+        max(p2_arr_thr - 100, 0),
         color="red",
         alpha=0.15
     )
@@ -89,12 +91,16 @@ axes[1].add_patch(
 
 axes[1].set_xscale("log")
 axes[1].set_yscale("log")
+axes[1].set_xlim(left=100)
+axes[1].set_ylim(bottom=100)
 axes[1].set_xlabel("Departure Delay (log)")
 
 plt.tight_layout()
-plt.savefig("scatter_loglog_P1_P2_filtered_low_delays.png", dpi=300)
+plt.savefig("scatter_loglog_P1_P2_filtered_low_delays_100start.png", dpi=300)
 plt.show()
-# Nedre højre kvadrant: dep >=180 og arr <180
+
+# ---------- Nedre højre kvadrant ----------
+# definer kvadranten: dep >=180, arr <180
 def lower_right_share(df):
     total = len(df)
     lr = df[(df["dep_delay"] >= 180) & (df["arr_delay"] < 180)]
@@ -106,5 +112,21 @@ p1_count, p1_share = lower_right_share(P1)
 p2_count, p2_share = lower_right_share(P2)
 
 print("Nedre højre kvadrant")
+print(f"P1: {p1_count} ud af {len(P1)} flights ({p1_share:.2%})")
+print(f"P2: {p2_count} ud af {len(P2)} flights ({p2_share:.2%})")
+
+# ---------- Øvre kvadrant ----------
+# definer kvadranten: dep >=180, arr <180
+def upper_left_share(df):
+    total = len(df)
+    lr = df[(df["dep_delay"] < 180) & (df["arr_delay"] >= 180)]
+    count = len(lr)
+    share = count / total if total > 0 else 0
+    return count, share
+
+p1_count, p1_share = upper_left_share(P1)
+p2_count, p2_share = upper_left_share(P2)
+
+print("Øvre venstre kvadrant")
 print(f"P1: {p1_count} ud af {len(P1)} flights ({p1_share:.2%})")
 print(f"P2: {p2_count} ud af {len(P2)} flights ({p2_share:.2%})")
