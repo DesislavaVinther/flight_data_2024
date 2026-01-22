@@ -1,0 +1,71 @@
+import pandas as pd                 # Data manipulation (reading CSV, filtering, grouping)
+import numpy as np                  # Numerical operations (arrays, mathematical functions)
+import statsmodels.formula.api as smf  # Formula interface for models (like R syntax)
+import warnings                     # Python's warning system
+warnings.filterwarnings('ignore')   # Suppress warning messages for cleaner output
+import matplotlib.pyplot as plt
+from scipy.stats import chi2
+import patsy                         # noget med at checke sigulariet af designmatrix
+
+usecols = ["binary_delay", "origin", "dest", "op_unique_carrier", "period", "month", "year", "day_of_week"]
+
+# Evt reduceret datasæt
+# df = pd.read_csv('C:/flight_data_2023_2025_V_1.5.csv', usecols=usecols, skiprows=lambda i: i % 50!= 0)
+
+df = pd.read_csv('C:/flight_data_2023_2025_V_1.5.csv', usecols=usecols)
+
+######### simple cleanup, konvertering og arbejdeskopi
+df = df.rename(columns={'op_unique_carrier': 'airline',  'binary_delay': 'Binary_delay'})
+df["year"] = df["year"].astype(int)
+df["month"] = df["month"].astype(int)
+df["day_of_week"] = df["day_of_week"].astype(int)
+model_df = df.copy()
+model_df = model_df.dropna()
+
+# Debugging - der er ikke et dataproblem.
+#print(sorted(model_df['day_of_week'].unique()))
+#print(sorted(model_df['month'].unique()))
+#print(sorted(model_df['year'].unique()))
+#print(sorted(model_df['period'].unique()))
+
+########## model & fit
+reference_airline = sorted(model_df['airline'].unique())[0]
+reference_month = 1
+reference_year = 2023
+
+
+# Modellerne fra rapporten
+#formula = 'Binary_delay ~ C(airline, Treatment(reference="' + reference_airline + '")) * C(period)'
+#subformula = 'Binary_delay ~ C(airline)'
+
+formula = 'Binary_delay ~ C(airline, Treatment(reference="' + reference_airline + '")) * C(month)'
+subformula = 'Binary_delay ~ C(airline)'
+
+
+modelfit = smf.logit(formula, data=model_df).fit(disp=0)
+submodelfit = smf.logit(subformula, data=model_df).fit(disp=0)
+
+
+###### output
+print("Hovedmodel")
+print(len(modelfit.params))
+print(f"Log-Likelihood: {modelfit.llf:.4f}")
+
+print("Undermodel")
+print(len(submodelfit.params))
+print(f"Log-Likelihood: {submodelfit.llf:.4f}")
+
+Q = -2 * (submodelfit.llf - modelfit.llf)
+print("Teststørrelse", Q)
+
+DF= len(modelfit.params)- len(submodelfit.params)
+
+GRAF = input("Graf til test")
+
+if GRAF == "y":
+    XX = max(Q*1.2, chi2.ppf(0.98, df=DF)*1.1)
+    print("Graf på vej")
+    x = np.arange(0, XX, 0.001)
+    plt.plot(x, chi2.pdf(x, df=DF))
+    plt.axvline(x=Q, color='r')
+    plt.show()
